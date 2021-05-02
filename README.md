@@ -17,7 +17,7 @@ More involved examples might require other tools.
 
 The `demo.sh` example downloads an Arch Linux installation cd and boots it with basic disk and networking.
 
-Just run `sudo ./demo.sh create` like so:
+Just run the `start` command like so, it'll format the disk and download the installer automatically:
 
 ```
 [sean@kor] $ sudo ./demo.sh start
@@ -36,11 +36,11 @@ VM status: running
 
 ## Systemd
 
-Place `qemu@.service` into `/etc/systemd/system`.
+Just run `install.sh`.
 
-Choose a file from the examples (demo.sh) and place it in `/etc/qemu/` (make sure it is marked executable)
+The installer places `qemu@.service` into `/etc/systemd/system` and places the example `vm.sh` files into `/etc/qemu`. 
 
-Now run the following: 
+Now run you can run systemd commands like the following to manage your vms: 
 ```
 systemctl enable --now qemu@demo
 ```
@@ -150,4 +150,4 @@ Commands:
 
 # Customization
 
-To customize your vm, just copy one of the examples to `yourvm.sh`. Have a look at the `disk_setup` and `disk_cleanup` functions and edit those to modify the storage. To modify the networking, look at the `if_setup` and `if_cleanup` functions. Lastly, if you want to directly modify qemu arguments, edit the `launch_qemu` function.
+To customize your vm, just copy one of the examples to `yourvm.sh`. Have a look at the `data_create` and `data_delete` functions and edit those to modify the storage. To modify the networking, look at the `net_create` and `net_delete` functions. Lastly, if you want to directly modify qemu arguments, edit the `qemu_launch` function.
