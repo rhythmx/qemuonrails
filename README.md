@@ -1,10 +1,19 @@
-If you've used QEMU for much, you've created more shell scripts than you wanted to in order to manage it. This attempts to be generic enough that you can make some small edits to these example templates and instantly have tools suitable enough to create auto-booting production VMs. But at the same time, the simple nature of these scripts doesn't get in the way of all the fancy QEMU developer sauce you don't get with "real" virtual machine managers.
+If you've used QEMU for much, you've created more shell scripts than you wanted to in order to manage it.
+
+These tools attempt to be generic enough that you can make some small edits to these example templates and instantly have tools suitable enough to create auto-booting production VMs. But at the same time, the simple nature of these scripts doesn't get in the way of all the fancy QEMU developer sauce you don't get with "real" virtual machine managers.
 
 # Getting Started
 
-Dependencies: GNU screen, libreadline (for rlwrap), and socat. More involved examples might require other tools. 
+Dependencies: 
+  * `GNU screen`
+  * `libreadline` (for rlwrap)
+  * `socat` 
+
+More involved examples might require other tools. 
 
 ## Standalone
+
+The `demo.sh` example downloads an Arch Linux installation cd and boots it with basic disk and networking.
 
 Just run `sudo ./demo.sh create` like so:
 
@@ -139,4 +148,4 @@ Commands:
 
 # Customization
 
-To customize your vm, just copy one of the examples to `yourvm.sh`. Have a look at the `disk_setup` and `disk_cleanup` functions and edit those to modify the storage. To modify the networking, look at the `if_setup` and `if_cleanup` functions. Lastly, if you want to directly modify qemu arguments, edit the `launch_qemu` function.cd ..
+To customize your vm, just copy one of the examples to `yourvm.sh`. Have a look at the `disk_setup` and `disk_cleanup` functions and edit those to modify the storage. To modify the networking, look at the `if_setup` and `if_cleanup` functions. Lastly, if you want to directly modify qemu arguments, edit the `launch_qemu` function.
