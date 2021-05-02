@@ -1,3 +1,5 @@
+# How to replace ESXi with 200 lines of sh
+
 If you've used QEMU for much, you've created more shell scripts than you wanted to in order to manage it.
 
 These tools attempt to be generic enough that you can make some small edits to these example templates and instantly have tools suitable enough to create auto-booting production VMs. But at the same time, the simple nature of these scripts doesn't get in the way of all the fancy QEMU developer sauce you don't get with "real" virtual machine managers.
