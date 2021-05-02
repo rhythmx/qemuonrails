@@ -123,6 +123,17 @@ launch_qemu() {
 		
 	# expand the command and exec
 	$LAUNCH_CMD
+
+	# wait for pid file to be created 
+	local timeout_ms=0
+	while ! [ -f "$RUNDIR/${VMNAME}.pid" ]; do
+		sleep 0.1
+		timeout_ms=$(( timeout_ms + 100 ))
+		if [ "$timeout_ms" -gt 5000 ]; then
+			echo "timed out waiting for PID file to be created"
+			return 1
+		fi
+	done 
 }
 
 # This waits until QEMU exits, then automatically cleans up temporal resources
@@ -244,3 +255,4 @@ case "$1" in
 		exit 1
 esac
 
+exit 0

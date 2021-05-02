@@ -5,7 +5,11 @@ Description=QEMU virtual machine
 Type=forking
 PIDFile=/run/qemu/%i/%i.pid
 ExecStart=/etc/qemu/%i.sh start
-ExecStop=/etc/qemu/%i.sh shutdown
+
+# Need to shutdown and then wait or else systemd will kill qemu when these commands return
+ExecStop=-/etc/qemu/%i.sh shutdown
+ExecStop=/etc/qemu/%i.sh wait
+TimeoutStopSec=60
 
 [Install]
 WantedBy=multi-user.target
