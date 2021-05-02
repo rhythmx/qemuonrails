@@ -2,6 +2,29 @@ If you've used QEMU for much, you've created more shell scripts than you wanted 
 
 # Getting Started
 
+Dependencies: GNU screen, libreadline (for rlwrap), and socat. More involved examples might require other tools. 
+
+## Standalone
+
+Just run `sudo ./demo.sh create` like so:
+
+```
+[sean@kor] $ sudo ./demo.sh start
+10240+0 records in
+10240+0 records out
+41943040 bytes (42 MB, 40 MiB) copied, 0.0400444 s, 1.0 GB/s
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  755M  100  755M    0     0  6988k      0  0:01:50  0:01:50 --:--:-- 10.0M
+```
+
+```
+[sean@kor] $ sudo ./demo.sh status
+VM status: running
+```
+
+## Systemd
+
 Place `qemu@.service` into `/etc/systemd/system`.
 
 Choose a file from the examples (demo.sh) and place it in `/etc/qemu/` (make sure it is marked executable)
@@ -113,3 +136,7 @@ Commands:
   reboot:   reset the VM
   delete:   delete the disks and any other persistent resources
 ```
+
+# Customization
+
+To customize your vm, just copy one of the examples to `yourvm.sh`. Have a look at the `disk_setup` and `disk_cleanup` functions and edit those to modify the storage. To modify the networking, look at the `if_setup` and `if_cleanup` functions. Lastly, if you want to directly modify qemu arguments, edit the `launch_qemu` function.cd ..
