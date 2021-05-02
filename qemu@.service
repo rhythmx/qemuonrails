@@ -1,0 +1,11 @@
+[Unit]
+Description=QEMU virtual machine
+
+[Service]
+Type=forking
+PIDFile=/run/qemu/%i/%i.pid
+ExecStart=/etc/qemu/%i.sh start
+ExecStop=/etc/qemu/%i.sh shutdown
+
+[Install]
+WantedBy=multi-user.target
