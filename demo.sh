@@ -22,7 +22,6 @@ data_create() {
 
 # Create the network adapter - this is a simple nat / user networking example
 net_create() {
-	NET_ARGS=""
 	NET_ARGS="${NET_ARGS} -netdev user,id=n1 -device virtio-net-pci,netdev=n1"
 }
 
