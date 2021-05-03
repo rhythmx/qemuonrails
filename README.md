@@ -4,6 +4,14 @@ If you've used QEMU for much, you've created more shell scripts than you wanted 
 
 These tools attempt to be generic enough that you can make some small edits to these example templates and instantly have tools suitable enough to create auto-booting production VMs. But at the same time, the simple nature of these scripts doesn't get in the way of all the fancy QEMU developer sauce you don't get with "real" virtual machine managers.
 
+## Demos/Examples
+
+* `demo` - Arch Linux installer example with a 10G flat file disk and usermode networking
+* `alpine_ppc` - PPC64 emulator running the Alpine Linux live cd
+* `hugepages` - Quick example of using hugetlbfs for optimized guest memory
+* `lvmraid_vlanbridge` - More involved example showing an optimized LVM setup and the use of VLANFiltering with Linux bridging
+* `win10` - Windows 10 VM with some Hyper-V tuning
+
 # Getting Started
 
 Dependencies: 
