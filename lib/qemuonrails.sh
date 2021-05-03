@@ -35,6 +35,13 @@ VMNAME=$(basename "$0" .sh| sed -e s/[[:space:]]//g)
 RUNDIR="/run/qemu/${VMNAME}"
 DATADIR="/var/qemu/${VMNAME}"
 
+# Various Tunable Parameters
+QEMU_BIN="qemu-system-x86_64" # can change this to any arch, even non native (disable kvm though)
+QEMU_MEM="-m 2G,slots=2"
+QEMU_CPU="-smp cpus=1,cores=1,threads=1"
+QEMU_KVM="-enable-kvm -cpu host"
+QEMU_VID="-vga qxl"
+
 # By default don't create files accessible by others
 umask 077
 
@@ -86,20 +93,18 @@ qemu_launch_wrap() {
 	QEMU_ARGS=""
 	QEMU_ARGS="${QEMU_ARGS} -pidfile ${RUNDIR}/${VMNAME}.pid"
 	QEMU_ARGS="${QEMU_ARGS} -name ${VMNAME}"
-	QEMU_ARGS="${QEMU_ARGS} -cpu host"
-	QEMU_ARGS="${QEMU_ARGS} --enable-kvm"
-	QEMU_ARGS="${QEMU_ARGS} -m 2G"
-	QEMU_ARGS="${QEMU_ARGS} -nographic"
-	QEMU_ARGS="${QEMU_ARGS} -vga qxl"
-	QEMU_ARGS="${QEMU_ARGS} -vnc none" # vnc=none allows you to use the monitor console to enable VNC later on the fly
+	QEMU_ARGS="${QEMU_ARGS} ${QEMU_KVM}"
+	QEMU_ARGS="${QEMU_ARGS} ${QEMU_CPU}"
+	QEMU_ARGS="${QEMU_ARGS} ${QEMU_MEM}"
+	QEMU_ARGS="${QEMU_ARGS} ${QEMU_VID}"
 	QEMU_ARGS="${QEMU_ARGS} ${DISK_ARGS}"
 	QEMU_ARGS="${QEMU_ARGS} ${NET_ARGS}"
+	QEMU_ARGS="${QEMU_ARGS} -nographic"
+	QEMU_ARGS="${QEMU_ARGS} -vnc none" # vnc=none allows you to use the monitor console to enable VNC later on the fly
 	QEMU_ARGS="${QEMU_ARGS} -qmp unix:${RUNDIR}/qmp-sock,server,nowait"
 	QEMU_ARGS="${QEMU_ARGS} -monitor unix:${RUNDIR}/mon-sock,server,nowait"
 	QEMU_ARGS="${QEMU_ARGS} -serial mon:stdio"
 
-	QEMU_BIN="qemu-system-x86_64"
-	
 	qemu_launch
 	
 	LAUNCH_CMD="/usr/bin/screen -d -m -S ${VMNAME} -- ${QEMU_BIN} ${QEMU_ARGS}"
