@@ -41,6 +41,8 @@ QEMU_MEM="-m 2G,slots=2"
 QEMU_CPU="-smp cpus=1,cores=1,threads=1"
 QEMU_KVM="-enable-kvm -cpu host"
 QEMU_VID="-vga qxl"
+QEMU_VNC="-vnc none"
+QEMU_EXT=""
 
 # By default don't create files accessible by others
 umask 077
@@ -97,10 +99,11 @@ qemu_launch_wrap() {
 	QEMU_ARGS="${QEMU_ARGS} ${QEMU_CPU}"
 	QEMU_ARGS="${QEMU_ARGS} ${QEMU_MEM}"
 	QEMU_ARGS="${QEMU_ARGS} ${QEMU_VID}"
+	QEMU_ARGS="${QEMU_ARGS} ${QEMU_VNC}" # vnc=none allows you to use the monitor console to enable VNC later on the fly
+	QEMU_ARGS="${QEMU_ARGS} ${QEMU_EXT}"
 	QEMU_ARGS="${QEMU_ARGS} ${DISK_ARGS}"
 	QEMU_ARGS="${QEMU_ARGS} ${NET_ARGS}"
 	QEMU_ARGS="${QEMU_ARGS} -nographic"
-	QEMU_ARGS="${QEMU_ARGS} -vnc none" # vnc=none allows you to use the monitor console to enable VNC later on the fly
 	QEMU_ARGS="${QEMU_ARGS} -qmp unix:${RUNDIR}/qmp-sock,server,nowait"
 	QEMU_ARGS="${QEMU_ARGS} -monitor unix:${RUNDIR}/mon-sock,server,nowait"
 	QEMU_ARGS="${QEMU_ARGS} -serial mon:stdio"

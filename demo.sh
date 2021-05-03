@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-# DEMO.sh - Spin up the Arch Linux installer with a 10G disk and usermode networking
+# DEMO.sh - Spin up a simple Arch Linux installer example with a 10G disk  flat file disk and usermode networking
 #
 
 # Load the sauce

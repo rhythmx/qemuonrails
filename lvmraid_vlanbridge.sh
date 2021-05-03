@@ -1,5 +1,9 @@
 #!/bin/sh
 
+#
+# lvmraid_bridgevlan.sh - More involved example showing an optimized LVM setup and the use of VLANFiltering with Linux bridging
+# 
+
 # Load the sauce
 source $(dirname $0)/lib/qemuonrails.sh
 

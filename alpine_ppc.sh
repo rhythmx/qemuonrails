@@ -14,7 +14,7 @@ QEMU_VID="-vga std"
 
 # Create System Disks - this is a simple flat file and installer ISO example
 data_create() {
-	# The root disk is a 10G flat file
+	# The root disk is a 10G QCOW2 image file
 	local rootdisk="$DATADIR/vm.${VMNAME}.root"
 	[ -f "$rootdisk" ] || qemu-img create -f qcow2 "$rootdisk" 10G # create empty disk file
 	DISK_ARGS="${DISK_ARGS} -hda $rootdisk"
