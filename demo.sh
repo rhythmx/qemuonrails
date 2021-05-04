@@ -24,5 +24,5 @@ cdrom virtio_file "https://dl-cdn.alpinelinux.org/alpine/v3.13/releases/x86_64/a
 # Create the network adapter
 network virtio_user
 
-# Handle the user arguments
+# Handle the user arguments (create / start / monitor / shutdown / delete / etc)
 command_handler "$@"
