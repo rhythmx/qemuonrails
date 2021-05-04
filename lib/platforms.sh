@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Helper function to set default environment variables for various platforms 
 platform() {
     local platform="$1"
