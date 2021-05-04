@@ -11,6 +11,7 @@ QEMU_BIN="qemu-system-ppc64"
 QEMU_MEM="-m 1G"
 QEMU_KVM=""
 QEMU_VID="-vga std"
+QEMU_EXT="-machine cap-htm=off"
 
 # Create System Disks - this is a simple flat file and installer ISO example
 data_create() {

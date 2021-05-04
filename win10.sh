@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # Win10.sh - Starts up a Windows 10 VM with some Hyper-V tuning

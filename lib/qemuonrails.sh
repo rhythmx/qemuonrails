@@ -35,14 +35,6 @@ VMNAME=$(basename "$0" .sh| sed -e s/[[:space:]]//g)
 RUNDIR="/run/qemu/${VMNAME}"
 DATADIR="/var/qemu/${VMNAME}"
 
-# Various Tunable Parameters
-QEMU_BIN="qemu-system-x86_64" # can change this to any arch, even non native (disable kvm though)
-QEMU_MEM="-m 2G,slots=2"
-QEMU_CPU="-smp cpus=1,cores=1,threads=1"
-QEMU_KVM="-enable-kvm -cpu host"
-QEMU_VID="-vga qxl"
-QEMU_VNC="-vnc none"
-QEMU_EXT=""
 
 # By default don't create files accessible by others
 umask 077
@@ -51,6 +43,10 @@ umask 077
 data_create_wrap() {
 	DISK_ARGS=""
 	install -d -m 700 "$DATADIR"
+	# create auto-disks if defined
+	if [ "$(command -v "disk_autocreate")x" != "x" ]; then
+		disk_autocreate
+	fi
 	data_create
 }
 data_create() { return; } # user override stub
@@ -85,7 +81,7 @@ runfiles_create() { return; } # user override stub
 
 # Release all temporary status files
 runfiles_delete_wrap() {
-	rm -rf "$RUNDIR/*"
+	rm -rf $RUNDIR/*
 }
 runfiles_delete() { return; }
 
@@ -175,7 +171,7 @@ qemu_is_running() {
 	if [ -f "$RUNDIR/${VMNAME}.pid" ]; then
 		local qpid=$(< "$RUNDIR/$VMNAME.pid")
 		if ! [ -d /proc/$qpid ]; then
-			data_setup_wrap
+			runfiles_delete_wrap
 			echo "VM is no longer running, cleaning up stale RUNDIR"
 			return 1
 		fi
@@ -250,3 +246,24 @@ command_handler() {
 			exit 1
 	esac	
 }
+
+# Add some syntax sugar to include other library files
+include() {
+	local file="$(dirname $0)/lib/$1.sh"
+	if [ -f "$file" ]; then 
+		. "$file"
+	else 
+		echo "include: not found: $1"
+		exit 1
+	fi	
+}
+
+# fatal uses SIGUSR1 to allow clean fatal errors from within 
+trap "exit 1" 10
+PROC=$$
+fatal(){
+  echo "$@" >&2
+  kill -10 $PROC
+}
+
+include platforms
