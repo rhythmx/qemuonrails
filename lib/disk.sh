@@ -127,7 +127,7 @@ image_get() {
         if [ "$?" -ne 0 ] || [ "$size" == 0 ] ; then
             fatal "Failed to download $url"
         fi
-        if [ "$size" -lte 1048576 ]; then
+        if [ "$size" -le 1048576 ]; then
             echo "warning: downloaded image is very small ($size bytes). contents of file are suspect. "
         fi
         echo "$url_id == $url" >> $ISO_CACHE_DIR/db.idx

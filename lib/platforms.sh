@@ -20,12 +20,26 @@ platform_defaults() {
     QEMU_KVM="-enable-kvm -cpu host"
     QEMU_VID="-vga qxl"
     QEMU_VNC="-vnc none"
+    QEMU_MCH=""
     QEMU_EXT=""
 }
 
 platform_native() {
     # take defaults
     return
+}
+
+# Note: you can just use x86_64 with KVM for i386 guests, but if you really want softemu...
+platform_i386() {
+    QEMU_BIN="qemu-system-i386"
+    QEMU_KVM=""
+}
+
+platform_aarch64() {
+    QEMU_BIN="qemu-system-aarch64"
+    QEMU_KVM=""
+    QEMU_VID="-vga std"
+    QEMU_MCH="-machine virt"
 }
 
 platform_windows10() {

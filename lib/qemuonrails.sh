@@ -1,9 +1,5 @@
 #!/bin/bash
 
-#
-# LVM.sh - Spin up using LVM RAID with LVM Cacheing and Bridge Networking with VLAN filtering
-#
-
 usage() {
 	echo "Usage: vmname.sh (start | run | wait | status | create | command | monitor | shutdown | reboot | delete)"
 	echo "Management util for creating/launching/monitoring a QEMU virtual machine"
@@ -27,14 +23,13 @@ usage() {
 	echo "  script in conjunction with systemd units in order to automatically launch and "
 	echo "  manage virtual machines at OS boot. Have a look at the examples." 
 	echo ""
-	echo "License: BSD 3-clause"
+	echo "(C) 2021 - Sean Bradly, License: BSD-3"
 }
 
 # Take the name of the vm from the script.. this makes it easy to copy the scripts and then recreate a new clone
 VMNAME=$(basename "$0" .sh| sed -e s/[[:space:]]//g)
 RUNDIR="/run/qemu/${VMNAME}"
 DATADIR="/var/qemu/${VMNAME}"
-
 
 # By default don't create files accessible by others
 umask 077
@@ -93,6 +88,7 @@ qemu_launch_wrap() {
 	QEMU_ARGS="${QEMU_ARGS} -name ${VMNAME}"
 	QEMU_ARGS="${QEMU_ARGS} ${QEMU_KVM}"
 	QEMU_ARGS="${QEMU_ARGS} ${QEMU_CPU}"
+	QEMU_ARGS="${QEMU_ARGS} ${QEMU_MCH}"
 	QEMU_ARGS="${QEMU_ARGS} ${QEMU_MEM}"
 	QEMU_ARGS="${QEMU_ARGS} ${QEMU_VID}"
 	QEMU_ARGS="${QEMU_ARGS} ${QEMU_VNC}" # vnc=none allows you to use the monitor console to enable VNC later on the fly
@@ -258,7 +254,7 @@ include() {
 	fi	
 }
 
-# fatal uses SIGUSR1 to allow clean fatal errors from within 
+# fatal uses SIGUSR1 to allow clean fatal errors from within subshells 
 trap "exit 1" 10
 PROC=$$
 fatal(){
@@ -266,4 +262,5 @@ fatal(){
   kill -10 $PROC
 }
 
+# Everything needs platform, so go ahead and include it
 include platforms
