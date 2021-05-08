@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# DEMO.sh - Spin up a simple alpine example with a 10G disk and usermode networking
+# DEMO.sh - Spin up a simple alpine x86_64 example with a 10G raw disk and usermode networking
 #
 
 # Load the sauce

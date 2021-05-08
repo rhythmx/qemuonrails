@@ -50,7 +50,15 @@ platform_windows10() {
     QEMU_KVM="-enable-kvm -cpu host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time" 
     QEMU_CPU="-smp cpus=4"
     QEMU_VID="-vga virtio"
-    QEMU_EXT="-audiodev pa,id=snd0 -device ich9-intel-hda -device hda-output,audiodev=snd0" # untested
+    QEMU_EXT="-audiodev pa,id=snd0 -device ich9-intel-hda -device hda-output,audiodev=snd0" # not working (by default anyway)
+}
+
+platform_ppc64() {
+    QEMU_BIN="qemu-system-ppc64"
+    QEMU_MEM="-m 1G"
+    QEMU_KVM=""
+    QEMU_VID="-vga std"
+    QEMU_EXT="-machine cap-htm=off"
 }
 
 memory() {

@@ -153,7 +153,7 @@ disk_qcow_create() {
     if ! [ -f "$path" ]; then
         qemu-img create -f qcow2 "$path" "$size" || fatal "could not create empty image file (via qcow)"
     fi
-    newargs="file=$path,format=qcow"
+    new_args="file=$path,format=qcow2"
     if [ -n "$media" ]; then
         new_args="${new_args},media=$media"
     fi
