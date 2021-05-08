@@ -36,7 +36,7 @@ network_vlanbridge_create() {
     if [ -z "$name" ]; then 
         name=eth
     fi
-    local ifname=$(vlanbridge_ifname "$name")
+    local ifname=$(vlanbridge_ifname "$name" "$idx")
 
     if [ -z "$mac" ]; then
         mac=$(vlanbridge_mac_from_name "$ifname")
@@ -53,7 +53,7 @@ network_vlanbridge_create() {
     ip link set dev $ifname address $mac
     ip link set $ifname up
     ip link set $ifname master $VLANBR
-    bridge vlan add def $ifname vid $vlan pvid untagged master
+    bridge vlan add dev $ifname vid $vlan pvid untagged master
 
     new_args="-netdev tap,id=$ifname,script=no,downscript=no"
     new_args="${new_args} -device virtio-net-pci,netdev=$ifname"
@@ -63,18 +63,37 @@ network_vlanbridge_create() {
 
 network_vlanbridge_delete() {
     local idx=$1
-    local name=$NET_ARGS[$idx,name]
+    local name=${NET_ARGS[$idx,name]}
     if [ -z "$name" ]; then 
         name=eth
     fi
-    local ifname=$(vlanbridge_ifname "$name")
+    local ifname=$(vlanbridge_ifname "$name" "$idx")
     ip link del ${ifname} >/dev/null 2>&1
 }
 
+# This is wonky because it needs to uniquely truncate to less than 16 characters, but still be descriptive as to the vm it is associated with and the fn on the vm
 vlanbridge_ifname() {
-    local $name=$1
-    local $idx=$2
-    echo "${VMNAME}.${name}${idx}"
+    local name=$1
+    local idx=$2
+    local opt_vmname=$3
+    if [ -z "$opt_vmname" ];  then
+	local ifname=$( echo -n "${VMNAME}-${name}${idx}" | sed -e 's/_/-/g')
+    else
+	local ifname=$( echo -n "${opt_vmname}-${name}${idx}" | sed -e 's/_/-/g')
+    fi
+    local len=$(echo -n $ifname | wc -c) 
+    if [ "$len" -gt 15 ]; then
+        local vmlen=$(echo -n $VMNAME | wc -c)
+	local overflow_len=$(( len - 15 )) 
+	# echo "resulting interface name is too long (over by ${overflow_len} bytes, truncating."
+	if [ "$vmlen" -gt "$overflow_len" ]; then
+		vlanbridge_ifname $name $idx $(echo -n "${VMNAME}" | head -c $(( vmlen - overflow_len )))
+		return
+	else
+		fatal "size overflow in automatic interface naming"
+	fi
+    fi
+    echo $ifname
 }
 
 # Uses checksum of name to generate MAC address

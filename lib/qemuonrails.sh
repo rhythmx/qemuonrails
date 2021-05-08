@@ -64,6 +64,7 @@ network_create() { return; } # user override stub
 
 # Delete any network resources created by `network_create*`
 net_delete_wrap() {
+	network_autodelete
 	net_delete
 }
 net_delete() { return; } # user override stub

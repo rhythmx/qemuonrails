@@ -81,7 +81,7 @@ disk_autodelete() {
     while [ $idx -lt $DASIZE ]; do
         local type=${DISK_ARGS[${idx},type]}
         # not all types need a custom delete, so the fn might not exist
-        if [ "$(command -v "disk_$1_delete")x" != "x" ]; then
+        if fn_exists "disk_${type}_delete"; then
             "disk_${type}_delete" $idx 
         fi
         idx=$(( idx + 1 ))

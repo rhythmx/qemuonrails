@@ -69,16 +69,19 @@ disk_lvmraid_create() {
 
     local diskname=$(lvmraid_diskname "$name")
 
-    # Create the main disk
-    lvmraid_create_mode "$mode" "$diskname" "$size"
+    # skip create if exists
+    if ! lvdisplay ${VOLGROUP}/${diskname} >/dev/null 2>&1; then
+    	# Create the main disk
+    	lvmraid_create_mode "$mode" "$diskname" "$size"
 
-    # Add LVM cache if requested
-    if [ -n "$cachemode" ]; then
-        lvmraid_create_mode "$cachemode" "$diskname.cache" "$cachesize"
-        lvconvert -y --type cache --cachevol "$VOLGROUP/$diskname.cache" "$VOLGROUP/$diskname"
-    fi 
+	# Add LVM cache if requested
+	if [ -n "$cachemode" ]; then
+	    lvmraid_create_mode "$cachemode" "$diskname.cache" "$cachesize"
+            lvconvert -y --type cache --cachevol "$VOLGROUP/$diskname.cache" "$VOLGROUP/$diskname"
+        fi 
+    fi
 
-    new_args="file=${diskname},if=virtio,format=raw"
+    new_args="file=/dev/$VOLGROUP/${diskname},if=virtio,format=raw"
     # add any extra args
     if [ -n "$ex" ]; then
         new_args="$new_args,$ex"
@@ -89,9 +92,9 @@ disk_lvmraid_create() {
 # Delete volumes when the "delete" command is invoked
 disk_lvmraid_delete() {
     local idx=$1
-    local name=$DISK_ARGS[$idx,name]
+    local name=${DISK_ARGS[$idx,name]}
     local diskname=$(lvmraid_diskname "$name")
-    lvmremove -y "$VOLGROUP/$diskname"
+    lvremove -y "$VOLGROUP/$diskname"
 }
 
 # Use a naming scheme organized by vm name
@@ -105,23 +108,18 @@ lvmraid_create_mode() {
     local diskname=$2
     local size=$3
 
-    # skip create if exists
-    if lvdisplay ${VOLGROUP}/${diskname} >/dev/null 2>&1; then
-        return
-    fi
-
     case $mode in
         ssd_raid0)
-            lvmcreate -y -type raid0 --stripes 2 --stripesize 4 -L "$size" -n "$diskname" "$VOLGROUP" "$SSD1" "$SSD2"
+            lvcreate -y --type raid0 --stripes 2 --stripesize 4 -L "$size" -n "$diskname" "$VOLGROUP" "$SSD1" "$SSD2"
             ;;
         ssd_raid1)
-            lvmcreate -y -type raid1 -m 1 -L "$size" -n "$diskname" "$VOLGROUP" "$SSD1" "$SSD2"
+            lvcreate -y --type raid1 -m 1 -L "$size" -n "$diskname" "$VOLGROUP" "$SSD1" "$SSD2"
             ;;
         hdd_raid0)
-            lvmcreate -y -type raid0 --stripes 2 --stripesize 4 -L "$size" -n "$diskname" "$VOLGROUP" "$HDD1" "$HDD2"
+            lvcreate -y --type raid0 --stripes 2 --stripesize 4 -L "$size" -n "$diskname" "$VOLGROUP" "$HDD1" "$HDD2"
             ;;
         hdd_raid1)
-            lvmcreate -y -type raid1 -m 1 -L "$size" -n "$diskname" "$VOLGROUP" "$HDD1" "$HDD2"
+            lvcreate -y --type raid1 -m 1 -L "$size" -n "$diskname" "$VOLGROUP" "$HDD1" "$HDD2"
             ;;
         *)
             fatal "Unknown raid mode $mode"
