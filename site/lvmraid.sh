@@ -75,7 +75,7 @@ disk_lvmraid_create() {
     # Add LVM cache if requested
     if [ -n "$cachemode" ]; then
         lvmraid_create_mode "$cachemode" "$diskname.cache" "$cachesize"
-        echo lvconvert -y --type cache --cachevol "$VOLGROUP/$diskname.cache" "$VOLGROUP/$diskname"
+        lvconvert -y --type cache --cachevol "$VOLGROUP/$diskname.cache" "$VOLGROUP/$diskname"
     fi 
 
     new_args="file=${diskname},if=virtio,format=raw"
@@ -112,16 +112,16 @@ lvmraid_create_mode() {
 
     case $mode in
         ssd_raid0)
-            echo lvmcreate -y -type raid0 --stripes 2 --stripesize 4 -L "$size" -n "$diskname" "$VOLGROUP" "$SSD1" "$SSD2"
+            lvmcreate -y -type raid0 --stripes 2 --stripesize 4 -L "$size" -n "$diskname" "$VOLGROUP" "$SSD1" "$SSD2"
             ;;
         ssd_raid1)
-            echo lvmcreate -y -type raid1 -m 1 -L "$size" -n "$diskname" "$VOLGROUP" "$SSD1" "$SSD2"
+            lvmcreate -y -type raid1 -m 1 -L "$size" -n "$diskname" "$VOLGROUP" "$SSD1" "$SSD2"
             ;;
         hdd_raid0)
-            echo lvmcreate -y -type raid0 --stripes 2 --stripesize 4 -L "$size" -n "$diskname" "$VOLGROUP" "$HDD1" "$HDD2"
+            lvmcreate -y -type raid0 --stripes 2 --stripesize 4 -L "$size" -n "$diskname" "$VOLGROUP" "$HDD1" "$HDD2"
             ;;
         hdd_raid1)
-            echo lvmcreate -y -type raid1 -m 1 -L "$size" -n "$diskname" "$VOLGROUP" "$HDD1" "$HDD2"
+            lvmcreate -y -type raid1 -m 1 -L "$size" -n "$diskname" "$VOLGROUP" "$HDD1" "$HDD2"
             ;;
         *)
             fatal "Unknown raid mode $mode"
