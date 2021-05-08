@@ -26,17 +26,13 @@ usage() {
 	echo "(C) 2021 - Sean Bradly, License: BSD-3"
 }
 
-# Take the name of the vm from the script.. this makes it easy to copy the scripts and then recreate a new clone
-VMNAME=$(basename "$0" .sh| sed -e s/[[:space:]]//g)
-RUNDIR="/run/qemu/${VMNAME}"
-DATADIR="/var/qemu/${VMNAME}"
 
 # By default don't create files accessible by others
 umask 077
 
-# Create System Disks - this is an advanced LVM example
+# Create System Disks 
 data_create_wrap() {
-	DISK_ARGS=""
+	QEMU_DISK_ARGS=""
 	install -d -m 700 "$DATADIR"
 	# create auto-disks if defined
 	if [ "$(command -v "disk_autocreate")x" != "x" ]; then
@@ -46,22 +42,27 @@ data_create_wrap() {
 }
 data_create() { return; } # user override stub
 
-# Delete any disks created by `disk_setup`
+# Delete any disks created by `data_create*`
 data_delete_wrap() {
 	data_delete
+	# delete auto-disks if defined
+	if [ "$(command -v "disk_autodelete")x" != "x" ]; then
+		disk_autodelete
+	fi
 	rm -rf "$DATADIR"
 	rm -rf "$RUNDIR"
 }
 data_delete() { return; } # user override stub
 
-# Create the network adapter - this is an advanced bridging w/ vlan example
-net_create_wrap() {
-	NET_ARGS=""
-	net_create
+# Create the network adapter 
+network_create_wrap() {
+	QEMU_NET_ARGS=""
+	network_autocreate
+	network_create
 }
-net_create() { return; } # user override stub
+network_create() { return; } # user override stub
 
-# Delete any network resources created by `if-setup`
+# Delete any network resources created by `network_create*`
 net_delete_wrap() {
 	net_delete
 }
@@ -93,8 +94,8 @@ qemu_launch_wrap() {
 	QEMU_ARGS="${QEMU_ARGS} ${QEMU_VID}"
 	QEMU_ARGS="${QEMU_ARGS} ${QEMU_VNC}" # vnc=none allows you to use the monitor console to enable VNC later on the fly
 	QEMU_ARGS="${QEMU_ARGS} ${QEMU_EXT}"
-	QEMU_ARGS="${QEMU_ARGS} ${DISK_ARGS}"
-	QEMU_ARGS="${QEMU_ARGS} ${NET_ARGS}"
+	QEMU_ARGS="${QEMU_ARGS} ${QEMU_DISK_ARGS}"
+	QEMU_ARGS="${QEMU_ARGS} ${QEMU_NET_ARGS}"
 	QEMU_ARGS="${QEMU_ARGS} -nographic"
 	QEMU_ARGS="${QEMU_ARGS} -qmp unix:${RUNDIR}/qmp-sock,server,nowait"
 	QEMU_ARGS="${QEMU_ARGS} -monitor unix:${RUNDIR}/mon-sock,server,nowait"
@@ -110,7 +111,12 @@ qemu_launch_wrap() {
 	fi
 
 	# expand the command and exec
-	$LAUNCH_CMD
+	if [ "$QEMU_DRY_RUN" != "t" ]; then
+		$LAUNCH_CMD
+	else
+		echo $LAUNCH_CMD
+		return
+	fi
 
 	# wait for pid file to be created 
 	local timeout_ms=0
@@ -186,17 +192,30 @@ fail_if_not_running() {
 
 # Handle user command
 command_handler() {
+	# Take the name of the vm from the script.. this makes it easy to copy the scripts and then recreate a new clone
+	# TODO: don't overwrite these if already set so scripts can redefine them	
+	VMNAME=$(basename "$0" .sh| sed -e s/[[:space:]]//g)
+	RUNDIR="/run/qemu/${VMNAME}"
+	QEMUDIR="/var/qemu"
+	DATADIR="${QEMUDIR}/${VMNAME}"
+	ISO_CACHE_DIR="${QEMUDIR}/isos"
+
 	case "$1" in 
 		start)
 			# Start QEMU in a GNU Screen session and return
 			command_handler create
-			net_create_wrap
+			network_create_wrap
 			qemu_launch_wrap
 			;;
 		run)
 			# Start _and_ wait until VM exits
 			command_handler start
 			command_handler wait
+			;;
+		dryrun)
+			# Same as "run" but only print the generated QEMU command
+			QEMU_DRY_RUN=t
+			command_handler run
 			;;
 		wait)
 			# Wait for QEMU to exit and clean up
@@ -243,14 +262,30 @@ command_handler() {
 	esac	
 }
 
+#
+# Required utility functions
+#
+
+# return true if the given function is defined
+fn_exists() {
+	local fnname=$1
+	if [ "$(command -v "$fnname")x" != "x" ]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
 # Add some syntax sugar to include other library files
 include() {
 	local file="$(dirname $0)/lib/$1.sh"
+	if [ "$(dirname $1)" = site ]; then
+		file="$(dirname $0)/$1.sh"
+	fi 
 	if [ -f "$file" ]; then 
 		. "$file"
 	else 
-		echo "include: not found: $1"
-		exit 1
+		fatal "include: not found: $1"
 	fi	
 }
 

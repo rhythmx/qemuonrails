@@ -22,6 +22,8 @@ platform_defaults() {
     QEMU_VNC="-vnc none"
     QEMU_MCH=""
     QEMU_EXT=""
+    QEMU_DISK_ARGS=""
+    QEMU_NET_ARGS=""
 }
 
 platform_native() {
@@ -39,7 +41,7 @@ platform_aarch64() {
     QEMU_BIN="qemu-system-aarch64"
     QEMU_KVM=""
     QEMU_VID="-vga std"
-    QEMU_MCH="-machine virt"
+    QEMU_MCH="-machine realview-pbx-a9" # not a lot of options with PCI and video
 }
 
 platform_windows10() {

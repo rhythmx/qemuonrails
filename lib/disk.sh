@@ -1,21 +1,176 @@
 #!/bin/bash
 
-# Syntax sugar for disk creation
+# Global args array to share parsing -- "fake" multidemensional array v[12,key] where 12,key is actually the key 
+declare -A -g DISK_ARGS
+DASIZE=0
+
+# Syntax sugar for disk creation - the complication here is that any real code
+# only runs when the "create" (or "delete") command is called, in every other
+# case it should just save the arguments so that the disks are "defined"  
 disk() {
-    local disktype="$1"
+    local disktype=$(disk_validate_type "$1")
     shift
-    # posix sh compliant way to check for a function
-    if [ "$(command -v "disk_$disktype")x" != "x" ]; then
+
+    local i=$DASIZE
+
+    # prefer custom arg handler, if defined
+    if fn_exists "disk_$disktype"; then
         "disk_$disktype" "$@"
-    else
-        echo "disk: type not found: $disktype"
-        exit 1
-    fi  
+        return
+    fi
+
+    # First argument should be type
+    DISK_ARGS["$i,type"]="$disktype"
+
+    while [ $# -gt 0 ]; do
+        case $1 in
+            -name)
+                DISK_ARGS["$i,name"]=$(disk_validate_name "$2")
+                shift
+                ;;
+            -size)
+                # Size implies create new
+                DISK_ARGS["$i,size"]=$(disk_validate_size "$2")
+                shift
+                ;;
+            -url)
+                DISK_ARGS["$i,url"]=$(disk_validate_url "$2")
+                shift
+                ;;
+            -path)
+                DISK_ARGS["$i,path"]=$(disk_validate_path "$2")
+                shift
+                ;;
+            -if)
+                # No validation because this can be relatively free form
+                DISK_ARGS["$i,if"]="$2" 
+                shift
+                ;;
+            -media)
+                DISK_ARGS["$i,media"]=$(disk_validate_media "$2")
+                shift 
+                ;;
+            -ex)
+                DISK_ARGS["$i,ex"]="$2" # free form extra arguments
+                shift
+                ;;
+            *) 
+                fatal "Unknown disk option: $1"
+        esac
+        shift
+    done
+    # set the next valid index
+    DASIZE=$(( DASIZE + 1 ))
 }
 
-# Syntax sugar for setting media=cdrom
 cdrom() {
-    disk "$@" "cdrom"
+    disk raw "$@" -media cdrom
+}
+
+disk_autocreate() {
+    local idx=0
+    while [ $idx -lt $DASIZE ]; do
+        local type=${DISK_ARGS[${idx},type]}
+        "disk_${type}_create" $idx
+        idx=$(( idx + 1 ))
+    done
+}
+
+disk_autodelete() {
+    local idx=0
+    while [ $idx -lt $DASIZE ]; do
+        local type=${DISK_ARGS[${idx},type]}
+        # not all types need a custom delete, so the fn might not exist
+        if [ "$(command -v "disk_$1_delete")x" != "x" ]; then
+            "disk_${type}_delete" $idx 
+        fi
+        idx=$(( idx + 1 ))
+    done
+}
+
+disk_raw_create() {
+    local idx="$1"
+    local name="${DISK_ARGS[$idx,name]}"
+    local size="${DISK_ARGS[$idx,size]}"
+    local url="${DISK_ARGS[$idx,url]}"
+    local path="${DISK_ARGS[$idx,path]}"
+    local if="${DISK_ARGS[$idx,if]}"
+    local media="${DISK_ARGS[$idx,media]}"
+    local ex="${DISK_ARGS[$idx,ex]}"
+
+     # Create new image file
+    if [ -n "$size" ]; then
+        if [ -z "$name" ]; then
+            fatal "size ($size) specified, but no name. can not create nameless disk."
+        fi
+        if [ -n "$path" ]; then
+            fatal "path specified ($path) but -size implies creating a new file, refusing to overwrite."
+        fi
+        path="${DATADIR}/vm.${name}.img"
+        if ! [ -f "$path" ]; then
+            truncate -s "$size" "$path" || fatal "could not create empty image file (via truncate -s)"
+        fi
+    else
+        if [ -n "$url" ]; then
+            if [ -n "$path" ]; then
+                fatal "path specified with -iso, which automatically determines it's own path."
+            fi
+            path=$(image_get "$url")
+        else
+            if [ -z "$path" ] || ! [ -r "$path" ]; then
+                fatal "no image path was specified or path inaccessible: $path"
+            fi  
+        fi
+    fi
+    new_args="file=$path,format=raw"
+    if [ -n "$media" ]; then
+        new_args="${new_args},media=$media"
+    fi
+    if [ -n "$if" ]; then
+        new_args="${new_args},if=$if"
+    fi
+    if [ -n "$ex" ]; then
+        new_args="${new_args},$ex"
+    fi
+    QEMU_DISK_ARGS="${QEMU_DISK_ARGS} -drive ${new_args}"
+}
+
+disk_qcow_create() {
+    local idx="$1"
+    local name="${DISK_ARGS[$idx,name]}"
+    local size="${DISK_ARGS[$idx,size]}"
+    local if="${DISK_ARGS[$idx,if]}"
+    local media="${DISK_ARGS[$idx,media]}"
+    local ex="${DISK_ARGS[$idx,ex]}"    
+    # Create new image file
+    if [ -z "$size" ]; then
+        fatal "no size specified for qcow disk image"
+    fi
+    if [ -z "$name" ]; then
+        fatal "no name specified. can not create nameless disk."
+    fi
+    local path="${DATADIR}/vm.${name}.qcow"
+    if ! [ -f "$path" ]; then
+        qemu-img create -f qcow2 "$path" "$size" || fatal "could not create empty image file (via qcow)"
+    fi
+    newargs="file=$path,format=qcow"
+    if [ -n "$media" ]; then
+        new_args="${new_args},media=$media"
+    fi
+    if [ -n "$if" ]; then
+        new_args="${new_args},if=$if"
+    fi
+    if [ -n "$ex" ]; then
+        new_args="${new_args},$ex"
+    fi
+    QEMU_DISK_ARGS="${QEMU_DISK_ARGS} -drive ${new_args}"
+}
+
+disk_validate_type() {
+    if [ "$(command -v "disk_$1")x" == "x" ] && [ "$(command -v "disk_$1_create")x" == "x" ]; then
+        fatal "disk: type not found: $1"
+    fi  
+    echo "$1"
 }
 
 disk_validate_name() {
@@ -36,78 +191,25 @@ disk_validate_media() {
     if (echo "$1" | grep -P '^cdrom$' >/dev/null 2>&1); then
         echo "cdrom"
     else
-        echo "disk"
+        fatal "only -media cdrom is supported atm"
     fi
 }
 
-# Attach a virtio definition
-disk_virtio_new() {
-    local name=$(disk_validate_name $1)
-    local size=$(disk_validate_size $2)
-    local media="$(disk_validate_media $3)"
-    local idx=$DISK_N_DISKS
-    eval "DISK${idx}_NAME=${name}"
-    eval "DISK${idx}_SIZE=${size}"
-    eval "DISK${idx}_PATH="
-    eval "DISK${idx}_MEDIA=${media}"
-    eval "DISK${idx}_TYPE=virtio"
-    DISK_N_DISKS=$(( DISK_N_DISKS + 1 ))
-}
-
-# Attach a virtio definition
-disk_virtio_file() {
-    local path="$1" # TODO: SECURITY: Filter special chars
-    local media="$(disk_validate_media $2)"
-    local idx=$DISK_N_DISKS
-    eval "DISK${idx}_PATH=${path}"
-    eval "DISK${idx}_NAME="
-    eval "DISK${idx}_SIZE="
-    eval "DISK${idx}_MEDIA=${media}"
-    eval "DISK${idx}_TYPE=virtio"
-    DISK_N_DISKS=$(( DISK_N_DISKS + 1 ))
-}
-
-# Create virtio disk as needed and configure QEMU args
-disk_virtio_autocreate() {
-    local name="$1"
-    local size="$2"
-	local file="$3"
-	local media="$4"
-
-    if ( echo "$file" | grep -P '^(https?|ftp)://' >/dev/null 2>&1); then
-        local path=$(image_get "$file")
+disk_validate_url() {
+    # bad stackoverflow regex is bad... just be careful with this value
+    regex='(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
+    if (echo "$1" | grep -P "$regex" >/dev/null 2>&1); then
+        echo "$1"
     else
-    	local path="$DATADIR/${VMNAME}.${name}.raw.img"
-        if ! [ -f "$path" ]; then
-            if [ -n "$name" ] && [ -n "$size" ]; then 
-                truncate -s "$size" "$path"
-            else
-                fatal "virtio_autocreate: file not found: $path"
-            fi
-        fi
-    fi
-
-    # Add the disk to QEMU's DISK arglist
-    if [ "$media" != "cdrom" ]; then
-	    DISK_ARGS="${DISK_ARGS} -drive file=$path,if=virtio,format=raw,media=${media}"
-    else
-	    DISK_ARGS="${DISK_ARGS} -drive file=$path,media=${media}"
+        fatal "not a valid url: $1"
     fi
 }
 
-# Create System Disks - this is a simple flat file and installer ISO example
-disk_autocreate() {
-    local idx=0
-
-    while [ "$idx" -lt "$DISK_N_DISKS" ]; do
-        local name=$(eval echo "\$DISK${idx}_NAME")
-        local size=$(eval echo "\$DISK${idx}_SIZE")
-        local path=$(eval echo "\$DISK${idx}_PATH")
-        local media=$(eval echo "\$DISK${idx}_MEDIA")
-        local type=$(eval echo "\$DISK${idx}_TYPE")
-        "disk_${type}_autocreate" "$name" "$size" "$path" "$media"
-        idx=$(( idx + 1 ))
-    done
+disk_validate_path() {
+    if ! [ -r "$1" ]; then
+        fatal "path is not accessible: $1"
+    fi
+    echo "$1"
 }
 
 # Download an image from the given url using a cache, returning the path to the cached image. 
@@ -136,5 +238,3 @@ image_get() {
 }
 
 # Global 
-DISK_N_DISKS=0
-ISO_CACHE_DIR=/var/qemu/isos

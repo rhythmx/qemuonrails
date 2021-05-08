@@ -158,4 +158,4 @@ Commands:
 
 # Customization
 
-To customize your vm, just copy one of the examples to `yourvm.sh`. Have a look at the `data_create` and `data_delete` functions and edit those to modify the storage. To modify the networking, look at the `net_create` and `net_delete` functions. Lastly, if you want to directly modify qemu arguments, edit the `qemu_launch` function.
+To customize your vm, just copy one of the examples to `yourvm.sh`. Have a look at the `data_create` and `data_delete` functions and edit those to modify the storage. To modify the networking, look at the `network_create` and `net_delete` functions. Lastly, if you want to directly modify qemu arguments, edit the `qemu_launch` function.

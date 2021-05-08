@@ -15,11 +15,11 @@ include network
 # configure platform 
 platform   aarch64
 memory     2G
-processors 2
+processors 1
 
 # Setup disks
-disk  virtio_new  "rootfs" 10G
-cdrom virtio_file "https://dl-cdn.alpinelinux.org/alpine/v3.13/releases/aarch64/alpine-standard-3.13.5-aarch64.iso"
+disk raw -name "rootfs" -size 10G
+cdrom -url "https://dl-cdn.alpinelinux.org/alpine/v3.13/releases/aarch64/alpine-standard-3.13.5-aarch64.iso"
 
 # Create the network adapter
 network virtio_user
