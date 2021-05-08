@@ -1,29 +1,37 @@
 # QEMU-on-Rails
 
-If you've used QEMU for much, you've created more shell scripts than you wanted to in order to manage it.
+If you've used QEMU for much, you've created more shell scripts than you've
+wanted to in order to manage it all.
 
-These tools attempt to be generic enough that you can make some small edits to these example templates and instantly have tools suitable enough to create auto-booting production VMs. But at the same time, the simple nature of these scripts doesn't get in the way of all the fancy QEMU developer sauce you don't get with "real" virtual machine managers.
+These tools provide a simple and reusable framework for a scriptable VM server.
+
+They attempt to be generic enough that you can make some small edits to these
+example templates and instantly have tools suitable enough to create
+auto-booting production VMs. At the same time, the simple nature of these
+scripts doesn't get in the way of all the fancy QEMU developer sauce you don't
+get with "real" virtual machine managers.
 
 ## Demos/Examples
 
-* `demo` - Arch Linux installer example with a 10G flat file disk and usermode networking
-* `alpine_ppc` - PPC64 emulator running the Alpine Linux live cd
-* `hugepages` - Quick example of using hugetlbfs for optimized guest memory
+* `alpine-aarch64` - AArch64 softcpu emulator running the Alpine Linux live cd
+* `alpine-i386` - i386 softcpu emulator running the Alpine Linux live cd (you probably want x86 on x86_64+kvm though)
+* `alpine-ppc64` - PPC64 softcpu emulator running the Alpine Linux live cd
+* `alpine-x86_64` - x86_64/x86 (KVM Hypervisor) running the Alpine Linux live cd
+* `hugepages` - Quick example of using hugetlbfs for optimized guest memory 
 * `lvmraid_vlanbridge` - More involved example showing an optimized LVM setup and the use of VLANFiltering with Linux bridging
 * `win10` - Windows 10 VM with some Hyper-V tuning
 
 # Getting Started
 
 Dependencies: 
-  * `GNU screen`
-  * `libreadline` (for rlwrap)
-  * `socat` 
+  * `GNU screen` 
+  * `socat`, `libreadline` (for `monitor` command) 
 
-More involved examples might require other tools. 
+More involved features might require other tools. 
 
 ## Standalone
 
-The `demo.sh` example downloads an Arch Linux installation cd and boots it with basic disk and networking.
+The `demo.sh` example downloads a Linux installation cd and boots it with basic disk and networking.
 
 Just run the `start` command like so, it'll format the disk and download the installer automatically:
 
@@ -42,7 +50,7 @@ Just run the `start` command like so, it'll format the disk and download the ins
 VM status: running
 ```
 
-## Systemd
+## Controlling via Systemd
 
 Just run `install.sh`.
 
@@ -82,7 +90,7 @@ To delete the resources from disk, run `/etc/qemu/demo.sh delete`
 
 ## Automatic Creation ##
 
-This can create disks, download images, or configure any other persistent resources the VM might need.
+This can create disks, download ISO or disk images, or configure any other persistent resources the VM might need.
 
 ```
 [root@vm systemd-qemu]# ./demo.sh create
@@ -135,7 +143,7 @@ change vnc password
 Password: hunter2
 ```
 
-Also, by default, QEMU runs inside its own screen session. If you want access to the serial console of your vm, just run `screen -DR demo`. Here you can see the bios, and if your OS has a serial console enable, you can interact with that.
+Also, by default, QEMU runs inside its own screen session. If you want access to the serial console of your vm, just run `screen -DR demo`. Here you can see the bios, and if your OS has a serial console enabled, you can interact with that too.
 
 ## Other features
 
@@ -158,4 +166,84 @@ Commands:
 
 # Customization
 
-To customize your vm, just copy one of the examples to `yourvm.sh`. Have a look at the `data_create` and `data_delete` functions and edit those to modify the storage. To modify the networking, look at the `network_create` and `net_delete` functions. Lastly, if you want to directly modify qemu arguments, edit the `qemu_launch` function.
+There are 3 main ways to go about customizing a VM script.
+
+1) Adding/removing setup macros in the VM script
+2) Defining "hook" functions 
+3) Implementing "site" libraries  
+
+
+## Setup and configuration macros
+
+The first line in any VM script should include the main `qemuonrails.sh` library like so: 
+
+```shell
+. $(dirname $0)/lib/qemuonrails.sh
+```
+
+Similarly, the last line in the vmscript should always be:
+
+```shell
+command_handler "$@"
+```
+
+Most scripts will want to include some common functionality:
+
+```shell
+include platforms
+include disk
+include network
+```
+
+### Platforms
+
+The plaforms library contains a collection of common settings for various hardware and software combinations. These will usually pre-define which CPU and Machine type to use, if KVM should be enabled, SMP, common peripherals, etc.
+
+It also exposes a few helper functions to override the defaults, like so:
+
+```shell
+memory     4G
+processors 2
+```
+
+### Disk
+
+The disk library will auto-provision new disk images for you when your VM is
+created and clean them up when it is deleted. It has support for flat file
+images, qcow2 images, and it can also download and cache images from a given
+URL.
+
+Examples:
+```shell
+disk  raw -name "rootfs" -size 10G -if virtio
+disk  qcow -name "c-drive" -size 64G -if virtio
+cdrom -url "https://dl-cdn.alpinelinux.org/alpine/v3.13/releases/x86_64/alpine-standard-3.13.5-x86_64.iso"
+cdrom -path "/home/sean/Windows10.iso"
+```
+
+### Network
+
+At present, the only one default networking mode is supported: usermode networking. This is because the most common other modes require pre-existing system configuration, like bridging to be up and ready. There is an example "site" library for dealing with this, but it is always going to be rather specific to the individual host.
+
+```shell
+network virtio_user
+```
+
+## Custom "hooks"
+
+To further customize the virtual machine environment, you can define one of
+a few main shell functions that allow you to inject arguments at various points
+in the vm creation and startup process. 
+
+* `data_create`: this function is called when the vm data is created for the first time.
+* `data_delete`: called when deleting all persistent vm resources
+* `network_create`: called when turning on the vm to provision network resources
+* `network_delete`: called after the vm has stopped running
+* `qemu_launch`: called just before QEMU lauches, giving a last chance to alter the QEMU arguments 
+
+## Site libraries
+
+These libraries allow you to create new macros specific to your local setup. The
+examples included add new disk types that support LVM raid and cacheing features
+as well as new networking types that support bridged tap adapters with hidden
+vlan tagging. 
