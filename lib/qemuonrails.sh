@@ -129,7 +129,8 @@ qemu_launch_wrap() {
 		sleep 0.1
 		timeout_ms=$(( timeout_ms + 100 ))
 		if [ "$timeout_ms" -gt 5000 ]; then
-			echo "timed out waiting for PID file to be created"
+			echo "timed out waiting for PID file to be created while running: "
+			echo $LAUNCH_CMD
 			return 1
 		fi
 	done 
