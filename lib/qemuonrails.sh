@@ -26,6 +26,12 @@ usage() {
 	echo "(C) 2021 - Sean Bradly, License: BSD-3"
 }
 
+# Take the name of the vm from the script.. this makes it easy to copy the scripts and then recreate a new clone
+VMNAME=$(basename "$0" .sh| sed -e s/[[:space:]]//g)
+RUNDIR="/run/qemu/${VMNAME}"
+QEMUDIR="/var/qemu"
+DATADIR="${QEMUDIR}/${VMNAME}"
+ISO_CACHE_DIR="${QEMUDIR}/isos"
 
 # By default don't create files accessible by others
 umask 077
@@ -198,13 +204,6 @@ fail_if_not_running() {
 
 # Handle user command
 command_handler() {
-	# Take the name of the vm from the script.. this makes it easy to copy the scripts and then recreate a new clone
-	# TODO: don't overwrite these if already set so scripts can redefine them	
-	VMNAME=$(basename "$0" .sh| sed -e s/[[:space:]]//g)
-	RUNDIR="/run/qemu/${VMNAME}"
-	QEMUDIR="/var/qemu"
-	DATADIR="${QEMUDIR}/${VMNAME}"
-	ISO_CACHE_DIR="${QEMUDIR}/isos"
 
 	case "$1" in 
 		start)
