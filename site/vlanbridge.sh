@@ -55,7 +55,7 @@ network_vlanbridge_create() {
     ip link set $ifname master $VLANBR
     bridge vlan add dev $ifname vid $vlan pvid untagged master
 
-    new_args="-netdev tap,id=$ifname,script=no,downscript=no"
+    new_args="-netdev tap,id=$ifname,ifname=$ifname,script=no,downscript=no"
     new_args="${new_args} -device virtio-net-pci,netdev=$ifname"
 
     QEMU_NET_ARGS="${QEMU_NET_ARGS} ${new_args}"
