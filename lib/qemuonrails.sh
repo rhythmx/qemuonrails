@@ -35,7 +35,7 @@ data_create_wrap() {
 	QEMU_DISK_ARGS=""
 	install -d -m 700 "$DATADIR"
 	# create auto-disks if defined
-	if [ "$(command -v "disk_autocreate")x" != "x" ]; then
+	if fn_exists "disk_autocreate"; then
 		disk_autocreate
 	fi
 	data_create
@@ -46,7 +46,7 @@ data_create() { return; } # user override stub
 data_delete_wrap() {
 	data_delete
 	# delete auto-disks if defined
-	if [ "$(command -v "disk_autodelete")x" != "x" ]; then
+	if fn_exists "disk_autodelete"; then
 		disk_autodelete
 	fi
 	rm -rf "$DATADIR"
@@ -57,17 +57,21 @@ data_delete() { return; } # user override stub
 # Create the network adapter 
 network_create_wrap() {
 	QEMU_NET_ARGS=""
-	network_autocreate
+	if fn_exists "network_autocreate"; then
+		network_autocreate
+	fi
 	network_create
 }
 network_create() { return; } # user override stub
 
 # Delete any network resources created by `network_create*`
-net_delete_wrap() {
-	network_autodelete
-	net_delete
+network_delete_wrap() {
+	if fn_exists "network_autodelete"; then
+		network_autodelete
+	fi
+	network_delete
 }
-net_delete() { return; } # user override stub
+network_delete() { return; } # user override stub
 
 # Create a place for scratch/status files for when QEMU is running 
 runfiles_create_wrap() {
@@ -134,15 +138,15 @@ qemu_launch() { return; } # user override stub
 
 # This waits until QEMU exits, then automatically cleans up temporal resources
 qemu_wait() {
-	runfiles_create
+	runfiles_create_wrap
 	if [ -f "$RUNDIR/${VMNAME}.pid" ]; then
 		local pid=$(< "$RUNDIR/$VMNAME.pid")
 		tail --pid=$pid -f /dev/null # `wait` won't work because QEMU isn't a child proc of this shell
 	else
 		echo "The VM is not running (no pidfile)"
 	fi
-	net_delete
-	runfiles_delete
+	network_delete_wrap
+	runfiles_delete_wrap
 }
 
 # Pipes a command to the QEMU monitor and filters out everything but the response
@@ -163,7 +167,7 @@ delete_command() {
 			qemu_wait
 		fi
 		data_delete_wrap
-		net_delete_wrap
+		network_delete_wrap
 	else
 		echo "skipping."
 	fi
