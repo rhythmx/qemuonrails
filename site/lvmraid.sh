@@ -81,12 +81,25 @@ disk_lvmraid_create() {
         fi 
     fi
 
-    new_args="file=/dev/$VOLGROUP/${diskname},if=virtio,format=raw"
+    new_args=""
+
+    # create an io thread per CPU, disks will be balanced across them 
+    if [ -z "$IOTHREADS" ]; then
+	cores=$(lscpu | grep Core\(s\)\ per\ socket: | cut -d: -f2)
+	sockets=$(lscpu | grep Socket\(s\): | cut -d: -f2)
+	IOTHREADS=$((cores * sockets))
+	for i in $(seq 0 $(( IOTHREADS - 1)) ); do
+            new_args="$new_args -object iothread,id=io$i"
+        done
+    fi
+
+    new_args="$new_args -device virtio-blk-pci,drive=drive$idx,num-queues=8,iothread=io$(( idx % IOTHREADS ))"
+    new_args="$new_args -drive file=/dev/$VOLGROUP/${diskname},if=none,id=drive$idx,format=raw"
     # add any extra args
     if [ -n "$ex" ]; then
         new_args="$new_args,$ex"
     fi
-    QEMU_DISK_ARGS="$QEMU_DISK_ARGS -drive $new_args"
+    QEMU_DISK_ARGS="$QEMU_DISK_ARGS $new_args"
 }
 
 # Delete volumes when the "delete" command is invoked
