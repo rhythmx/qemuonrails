@@ -46,30 +46,36 @@ network_vlanbridge_create() {
         fatal "Must specify the vlan id, wont default to the untagged mgmt vlan"
     fi
 
-    # Skip if already created
-    ip link list $ifname >/dev/null 2>&1 && return
+    # Create auto-up script for interfaces
+    ifup_script="${RUNDIR}/ifup.$ifname"
+    echo "#!/bin/bash -x"                                             >  $ifup_script
+    echo "ip link set dev $ifname address $mac"                       >> $ifup_script
+    echo "ip link set $ifname up"                                     >> $ifup_script
+    echo "ip link set $ifname master $VLANBR"                         >> $ifup_script
+    echo "bridge vlan add dev $ifname vid $vlan pvid untagged master" >> $ifup_script
+    chmod u+x $ifup_script
 
-    ip tuntap add dev $ifname mode tap
-    ip link set dev $ifname address $mac
-    ip link set $ifname up
-    ip link set $ifname master $VLANBR
-    bridge vlan add dev $ifname vid $vlan pvid untagged master
+    # ... and the autoremoval script as well
+    ifdn_script="${RUNDIR}/ifdn.$ifname"
+    echo "#!/bin/bash"                                                >  $ifdn_script
+    echo "ip link del $ifname"                                        >  $ifdn_script  
+    chmod u+x $ifdn_script
 
-    new_args="-netdev tap,id=$ifname,ifname=$ifname,script=no,downscript=no"
+    new_args="-netdev tap,id=$ifname,ifname=$ifname,script=${ifup_script},downscript=${ifdn_script}"
     new_args="${new_args} -device virtio-net-pci,netdev=$ifname"
 
     QEMU_NET_ARGS="${QEMU_NET_ARGS} ${new_args}"
 }
 
-network_vlanbridge_delete() {
-    local idx=$1
-    local name=${NET_ARGS[$idx,name]}
-    if [ -z "$name" ]; then 
-        name=eth
-    fi
-    local ifname=$(vlanbridge_ifname "$name" "$idx")
-    ip link del ${ifname} >/dev/null 2>&1
-}
+# network_vlanbridge_delete() {
+#    local idx=$1
+#    local name=${NET_ARGS[$idx,name]}
+#    if [ -z "$name" ]; then 
+#        name=eth
+#    fi
+#    local ifname=$(vlanbridge_ifname "$name" "$idx")
+#    ip link del ${ifname} >/dev/null 2>&1
+#}
 
 # This is wonky because it needs to uniquely truncate to less than 16 characters, but still be descriptive as to the vm it is associated with and the fn on the vm
 vlanbridge_ifname() {
