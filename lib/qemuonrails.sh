@@ -88,7 +88,7 @@ runfiles_create() { return; } # user override stub
 
 # Release all temporary status files
 runfiles_delete_wrap() {
-	rm -rf $RUNDIR/*
+	rm -rf $RUNDIR
 }
 runfiles_delete() { return; }
 
