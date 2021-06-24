@@ -19,7 +19,7 @@ platform_defaults() {
     QEMU_CPU="-smp cpus=1,cores=1,threads=1"
     QEMU_KVM="-enable-kvm -cpu host"
     QEMU_VID="-vga qxl"
-    QEMU_VNC="-vnc none"
+    QEMU_VNC="-vnc unix:$RUNDIR/vnc"
     QEMU_MCH=""
     QEMU_EXT=""
     QEMU_DISK_ARGS=""
