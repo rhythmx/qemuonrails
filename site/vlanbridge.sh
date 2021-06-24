@@ -49,7 +49,7 @@ network_vlanbridge_create() {
     # Create auto-up script for interfaces
     ifup_script="${RUNDIR}/ifup.$ifname"
     echo "#!/bin/bash -x"                                             >  $ifup_script
-    echo "ip link set dev $ifname address $mac"                       >> $ifup_script
+    # echo "ip link set dev $ifname address $mac"                       >> $ifup_script
     echo "ip link set $ifname up"                                     >> $ifup_script
     echo "ip link set $ifname master $VLANBR"                         >> $ifup_script
     echo "bridge vlan add dev $ifname vid $vlan pvid untagged master" >> $ifup_script
@@ -62,7 +62,7 @@ network_vlanbridge_create() {
     chmod u+x $ifdn_script
 
     new_args="-netdev tap,id=$ifname,ifname=$ifname,script=${ifup_script},downscript=${ifdn_script}"
-    new_args="${new_args} -device virtio-net-pci,netdev=$ifname"
+    new_args="${new_args} -device virtio-net-pci,netdev=$ifname,mac=$mac"
 
     QEMU_NET_ARGS="${QEMU_NET_ARGS} ${new_args}"
 }
