@@ -74,9 +74,9 @@ disk_lvmraid_create() {
     	# Create the main disk
     	lvmraid_create_mode "$mode" "$diskname" "$size"
 
-	# Add LVM cache if requested
-	if [ -n "$cachemode" ]; then
-	    lvmraid_create_mode "$cachemode" "$diskname.cache" "$cachesize"
+	    # Add LVM cache if requested
+	    if [ -n "$cachemode" ]; then
+	        lvmraid_create_mode "$cachemode" "$diskname.cache" "$cachesize"
             lvconvert -y --type cache --cachevol "$VOLGROUP/$diskname.cache" "$VOLGROUP/$diskname"
         fi 
     fi
