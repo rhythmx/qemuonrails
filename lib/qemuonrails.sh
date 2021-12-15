@@ -107,15 +107,22 @@ qemu_launch_wrap() {
 	QEMU_ARGS="${QEMU_ARGS} ${QEMU_EXT}"
 	QEMU_ARGS="${QEMU_ARGS} ${QEMU_DISK_ARGS}"
 	QEMU_ARGS="${QEMU_ARGS} ${QEMU_NET_ARGS}"
-	QEMU_ARGS="${QEMU_ARGS} -nographic"
 	QEMU_ARGS="${QEMU_ARGS} -qmp unix:${RUNDIR}/qmp-sock,server,nowait"
 	QEMU_ARGS="${QEMU_ARGS} -monitor unix:${RUNDIR}/mon-sock,server,nowait"
 	QEMU_ARGS="${QEMU_ARGS} -serial mon:stdio"
 
+	if [ "$FOREGROUND" == "" ]; then
+		QEMU_ARGS="${QEMU_ARGS} -nographic"
+	fi
+
 	qemu_launch
-	
-	LAUNCH_CMD="/usr/bin/screen -d -m -S ${VMNAME} -- ${QEMU_BIN} ${QEMU_ARGS}"
-	
+
+	if [ "$FOREGROUND" == "" ]; then
+		LAUNCH_CMD="/usr/bin/screen -d -m -S ${VMNAME} -- ${QEMU_BIN} ${QEMU_ARGS}"
+	else
+		LAUNCH_CMD="nohup ${QEMU_BIN} ${QEMU_ARGS} &"
+	fi
+
 	if qemu_is_running; then
 		echo "this vm is already running!"
 		return
