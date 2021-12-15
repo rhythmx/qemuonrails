@@ -1,5 +1,5 @@
 # This bridge needs to be preconfigured with VLANFiltering enabled
-VLANBR="vlanbr0"
+VLANBR="br0" # TODO: make this configurable
 
 network_vlanbridge() {
     local idx=$NASIZE
@@ -105,7 +105,7 @@ vlanbridge_ifname() {
 # Uses checksum of name to generate MAC address
 vlanbridge_mac_from_name() {
     local name=$1
-    local i=$(( 0x$(echo -n "${name}" | md5sum - | head -c 8) ))
+    local i=$(( 0x$(echo -n "${name}${hostname}" | md5sum - | head -c 8) ))
     printf "00:11:e7:%02x:%02x:%02x" $(( i & 0xff )) $(( ( i >> 8 ) & 0xff)) $(( ( i >> 16 ) & 0xff))
 }
 
